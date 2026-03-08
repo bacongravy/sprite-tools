@@ -55,12 +55,20 @@ def build_api_cmd(sprite, org, endpoint, curl_args=None):
     return cmd
 
 
-def check_api_error(stdout_bytes):
-    """Parse JSON response and return error string if present, else None."""
+def check_api_error(stdout_bytes, expect_json=False):
+    """Check API response for errors. Returns error string if present, else None.
+
+    Detects both JSON {"error": ...} responses and plain-text error messages
+    like "Bad Request". If expect_json is True, any non-JSON response is an error.
+    """
     try:
         data = json.loads(stdout_bytes)
         if isinstance(data, dict) and "error" in data:
             return data["error"]
     except (json.JSONDecodeError, ValueError):
-        pass
+        text = stdout_bytes.decode("utf-8", errors="replace").strip()
+        if text and (expect_json or text in ("Bad Request", "Not Found",
+                                              "Internal Server Error",
+                                              "Unauthorized", "Forbidden")):
+            return text
     return None

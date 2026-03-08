@@ -34,7 +34,8 @@ def main():
     encoded = urllib.parse.quote(remote_path, safe="")
     cmd = ["sprite", "api", "-s", sprite,
            f"/fs/write?path={encoded}&mkdir=true",
-           "-X", "PUT", "--data-binary", "@-"]
+           "-X", "PUT", "-H", "Content-Type: application/octet-stream",
+           "--data-binary", "@-"]
     if org:
         cmd.extend(["-o", org])
 
