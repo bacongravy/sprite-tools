@@ -1,4 +1,4 @@
-"""Shared config resolution for sprite-tools CLI commands."""
+"""Shared config resolution and helpers for sprite-tools CLI commands."""
 
 import json
 import os
@@ -43,3 +43,24 @@ def resolve_context(args_sprite, args_org):
         print("Error: no .sprite file found and no -s specified", file=sys.stderr)
         sys.exit(1)
     return args_sprite, org
+
+
+def build_api_cmd(sprite, org, endpoint, curl_args=None):
+    """Build a sprite api command. curl_args come after the endpoint."""
+    cmd = ["sprite", "api", "-s", sprite, endpoint]
+    if org:
+        cmd.extend(["-o", org])
+    if curl_args:
+        cmd.extend(curl_args)
+    return cmd
+
+
+def check_api_error(stdout_bytes):
+    """Parse JSON response and return error string if present, else None."""
+    try:
+        data = json.loads(stdout_bytes)
+        if isinstance(data, dict) and "error" in data:
+            return data["error"]
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return None

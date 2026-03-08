@@ -6,7 +6,7 @@ import subprocess
 import sys
 import urllib.parse
 
-from sprite_tools.context import resolve_context
+from sprite_tools.context import resolve_context, check_api_error
 
 
 def main():
@@ -19,14 +19,22 @@ def main():
     args = parser.parse_args()
 
     sprite, org = resolve_context(args.sprite, args.org)
-    remote_path = args.remote_path or os.path.basename(args.local_path)
 
-    with open(args.local_path, "rb") as f:
-        data = f.read()
+    if args.local_path == "-":
+        data = sys.stdin.buffer.read()
+        remote_path = args.remote_path
+        if not remote_path:
+            print("Error: remote_path is required when reading from stdin", file=sys.stderr)
+            sys.exit(1)
+    else:
+        with open(args.local_path, "rb") as f:
+            data = f.read()
+        remote_path = args.remote_path or os.path.basename(args.local_path)
 
     encoded = urllib.parse.quote(remote_path, safe="")
-    cmd = ["sprite", "api", "-s", sprite, "-X", "PUT",
-           f"/fs/write?path={encoded}&mkdir=true", "--data-binary", "@-"]
+    cmd = ["sprite", "api", "-s", sprite,
+           f"/fs/write?path={encoded}&mkdir=true",
+           "-X", "PUT", "--data-binary", "@-"]
     if org:
         cmd.extend(["-o", org])
 
@@ -34,6 +42,11 @@ def main():
     if result.returncode != 0:
         print(f"Error writing to {sprite}:{remote_path}", file=sys.stderr)
         print(result.stderr.decode(), file=sys.stderr)
+        sys.exit(1)
+
+    api_err = check_api_error(result.stdout)
+    if api_err:
+        print(f"Error: {api_err}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Uploaded {len(data)} bytes to {sprite}:{remote_path}", file=sys.stderr)

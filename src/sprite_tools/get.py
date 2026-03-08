@@ -6,7 +6,7 @@ import subprocess
 import sys
 import urllib.parse
 
-from sprite_tools.context import resolve_context
+from sprite_tools.context import resolve_context, check_api_error
 
 
 def main():
@@ -32,10 +32,17 @@ def main():
         print(result.stderr.decode(), file=sys.stderr)
         sys.exit(1)
 
-    with open(local_path, "wb") as f:
-        f.write(result.stdout)
+    api_err = check_api_error(result.stdout)
+    if api_err:
+        print(f"Error: {api_err}", file=sys.stderr)
+        sys.exit(1)
 
-    print(f"Saved {len(result.stdout)} bytes to {local_path}", file=sys.stderr)
+    if local_path == "-":
+        sys.stdout.buffer.write(result.stdout)
+    else:
+        with open(local_path, "wb") as f:
+            f.write(result.stdout)
+        print(f"Saved {len(result.stdout)} bytes to {local_path}", file=sys.stderr)
 
 
 if __name__ == "__main__":
