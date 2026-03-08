@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sprite-tools"
+version = "0.1.0"
+description = "CLI tools for transferring files to/from Sprite environments"
+requires-python = ">=3.9"
+
+[project.scripts]
+sprite-get = "sprite_tools.get:main"
+sprite-put = "sprite_tools.put:main"
